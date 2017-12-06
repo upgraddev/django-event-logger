@@ -1,5 +1,3 @@
-import ast
-from functools import reduce
 import logging
 
 from django.conf import settings
@@ -7,35 +5,13 @@ from django.db.models.signals import pre_save
 from django.dispatch.dispatcher import receiver
 
 from .models import EventLog
+from .helpers import conditions_evaluator
 
 
 logger = logging.getLogger(__name__)
 
 
-def _string_formatter(input_string):
-    if isinstance(input_string, str):
-        return '"{input_string}"'.format(input_string=input_string)
-
-def process_condition(instance, condition):
-    lhs = reduce(getattr, condition["property"].split('.'), instance)
-    rhs = ast.literal_eval(condition["value"])
-    if isinstance(rhs, dict) and "property" in rhs:
-        rhs = getattr(instance, rhs["property"], None)
-    lhs = _string_formatter(lhs)
-    rhs = _string_formatter(rhs)
-    return bool(eval(" ".join([str(lhs), condition["operator"], str(rhs)])))
-
-def conditions_evaluator(instance, conditions):
-    if conditions is None:
-        return True
-    condition_literals = [[True]]
-    for and_conditions in conditions:
-        condition_literals.append([])
-        for or_condition in and_conditions:
-            condition_literals[-1].append(process_condition(instance, or_condition))
-    return all([any(or_conditions) for or_conditions in condition_literals])
-
-def additional_info_adder(data):
+def additional_info_adder(data, original_object=None):
     for import_statement in settings.EVENT_LOGGER_OUTPUT_FORMAT.get("imports", []):
         exec(import_statement)
     for column_name, column_details in settings.EVENT_LOGGER_OUTPUT_FORMAT.get("columns", {}).items():
@@ -44,6 +20,7 @@ def additional_info_adder(data):
             column_object = eval(column_details["object_name"])
             column_value = getattr(column_object, column_details["property"], column_value)
         data[column_name] = column_value
+
 
 def create_signal_receiever(sender, tracked_fields, app_name=None):
     @receiver(pre_save, sender=sender)
@@ -64,12 +41,13 @@ def create_signal_receiever(sender, tracked_fields, app_name=None):
                     'column_type': field_type,
                     'model_name': sender.__name__,
                     'app_name': app_name,
-                    'model_id': instance.id,
+                    'object_id': instance.id,
                 }
-                additional_info_adder(data)
+                additional_info_adder(data, original_object=old_instance)
                 logger.debug(data)
                 EventLog.objects.create(**data)
     return track_field_changes
+
 
 for app_name, model_details in settings.EVENT_LOGGER_TRACKED_FIELDS.items():
     for model_name, field_details in model_details.items():
