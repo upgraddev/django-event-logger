@@ -45,7 +45,7 @@ def additional_info_adder(data):
             column_value = getattr(column_object, column_details["property"], column_value)
         data[column_name] = column_value
 
-def create_signal_receiever(sender, tracked_fields):
+def create_signal_receiever(sender, tracked_fields, app_name=None):
     @receiver(pre_save, sender=sender)
     def track_field_changes(sender, instance, **kwargs):
         old_instance = sender.objects.get(id=instance.id)
@@ -63,6 +63,7 @@ def create_signal_receiever(sender, tracked_fields):
                     'after': new_value,
                     'column_type': field_type,
                     'model_name': sender.__name__,
+                    'app_name': app_name,
                     'model_id': instance.id,
                 }
                 additional_info_adder(data)
@@ -73,7 +74,7 @@ def create_signal_receiever(sender, tracked_fields):
 for app_name, model_details in settings.EVENT_LOGGER_TRACKED_FIELDS.items():
     for model_name, field_details in model_details.items():
         sender = '.'.join([app_name, model_name])
-        signal_receiver = create_signal_receiever(sender, field_details)
+        signal_receiver = create_signal_receiever(sender, field_details, app_name=app_name)
         func_name = 'signal_receiver_{app_name}_{model_name}'.format(
             app_name=app_name, model_name=model_name)
         locals()[func_name] = signal_receiver

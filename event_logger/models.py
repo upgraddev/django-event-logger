@@ -3,6 +3,7 @@ from django.db import models
 
 
 class EventLog(models.Model):
+    app_name = models.TextField()
     model_name = models.TextField()
     model_id = models.TextField()
     field_name = models.TextField()
