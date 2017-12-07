@@ -104,7 +104,8 @@ EVENT_LOGGER_TRACKED_FIELDS = {
     }
 }
 ```
-The underlying table for storing events (event_logger_eventlog) will contain the following base attributes:
+
+#### The underlying table for storing events (event_logger_eventlog) will contain the following base attributes:
     1. *id* - Auto-incrementing integer ID for the table
     2. *app_name* - Name of the app which generated the event
     3. *model_name* - Name of the model which generated the event
