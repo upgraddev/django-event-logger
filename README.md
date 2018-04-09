@@ -29,7 +29,7 @@ EVENT_LOGGER_OUTPUT_FORMAT = {
     "imports": ["<import statment>"], # List of import statements to fetch relevant objects and libraries (can include pre-processing steps as well)
     "columns": {
         "<column_name>": { # Name of column of the event table (Add more keys to get more columns)
-            "object_name": "<Name of object, can be the one imported above>",
+            "object_name": "<Name of object, can be the one imported above or _object to refer to the object being updated>",
             "property": "<Property of the object that needs to be logged under the column_ame>",
             "default": "<default_value in case the above is None>"
         },
@@ -104,3 +104,14 @@ EVENT_LOGGER_TRACKED_FIELDS = {
     }
 }
 ```
+
+#### The underlying table for storing events (event_logger_eventlog) will contain the following base attributes:
+    1. *id* - Auto-incrementing integer ID for the table
+    2. *app_name* - Name of the app which generated the event
+    3. *model_name* - Name of the model which generated the event
+    4. *object_id* - The ID of the object in the model which was created/updated
+    5. *field_name* - The name of the tracked attribute of the object which was changed
+    6. *before* - The value of the attribute prior to the change (null in case of creation)
+    7. *after* - The updated value of the tracked attribute
+    8. *column_type* - The before/after value are cast as strings, this field captures the python data type of the attribute
+    9. *timestamp* - The timestamp when the event was logged in the events table

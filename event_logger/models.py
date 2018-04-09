@@ -3,8 +3,9 @@ from django.db import models
 
 
 class EventLog(models.Model):
+    app_name = models.TextField()
     model_name = models.TextField()
-    model_id = models.TextField()
+    object_id = models.TextField()
     field_name = models.TextField()
     before = models.TextField(null=True)
     after = models.TextField(null=True)
